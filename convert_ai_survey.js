@@ -8,12 +8,9 @@ const inPath = process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dir
 const outJsonPath = inPath.replace(/\.csv$/i, '.renamed.json');
 const outCsvPath  = inPath.replace(/\.csv$/i, '.renamed.csv');
 
-// ヘッダーの表記ゆれを吸収（余分な空白をまとめる・前後空白除去・全角空白→半角）
-const normalize = (s) =>
-  String(s).replace(/\u3000/g, ' ').replace(/\s+/g, ' ').trim();
+// ヘッダーの表記ゆれ吸収
+const normalize = (s) => String(s).replace(/\u3000/g, ' ').replace(/\s+/g, ' ').trim();
 
-// === 元ヘッダー → 短いキー のマッピング ===
-// ※normalize() 後の文字列で一致します。
 const HEADER_MAP = {
   "Are/were you a BioHackathon participant? (Select all that apply)": "bh_participation",
   "What is your field? (Select all the apply)": "field",
@@ -49,29 +46,22 @@ const HEADER_MAP = {
   "If you're ok with us contacting you with further questions, please share your email here": "contact_email"
 };
 
-// 未マッチ見出しのフォールバック（安全なキーを作る）
 const toSafeKey = (h) =>
-  normalize(h)
-    .toLowerCase()
-    .replace(/[^\w]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 60) || 'col';
+  normalize(h).toLowerCase().replace(/[^\w]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'col';
 
-const csvText = fs.readFileSync(inPath, 'utf8');
+const csvText = fs.readFileSync(inPath, 'utf8').replace(/^\uFEFF/, '');
 
-// 1) まずはヘッダー列を取得（配列）するため、columns:false で1行目だけ読む
+// 1) ヘッダー取得
 const headerOnly = parse(csvText, { to: 1 })[0];
 const rawHeaders = headerOnly.map(String);
 
-// 2) 新しいカラム名を決定（順序は元CSVの順を維持）
-const newColumns = rawHeaders.map((h) => {
-  const key = HEADER_MAP[normalize(h)];
-  return key || toSafeKey(h);
-});
+// 2) 新しいカラム名
+const newColumns = rawHeaders.map((h) => HEADER_MAP[normalize(h)] || toSafeKey(h));
 
-// 3) columns: 新しいカラム名でパース（→ 配列の各オブジェクトは短いキーになる）
+// 3) 2行目からデータとして読む（← ここがポイント）
 const records = parse(csvText, {
   columns: newColumns,
+  from_line: 2,
   skip_empty_lines: true,
   relax_quotes: true
 });
@@ -79,11 +69,8 @@ const records = parse(csvText, {
 // 4) JSON出力
 fs.writeFileSync(outJsonPath, JSON.stringify(records, null, 2), 'utf8');
 
-// 5) 置換後ヘッダーのCSVも出力
-const renamedCsv = stringify(records, {
-  header: true,
-  columns: newColumns
-});
+// 5) 置換後ヘッダーでCSV出力
+const renamedCsv = stringify(records, { header: true, columns: newColumns });
 fs.writeFileSync(outCsvPath, renamedCsv, 'utf8');
 
 console.log(`✅ JSON: ${outJsonPath}`);
