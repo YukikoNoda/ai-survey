@@ -12,19 +12,19 @@
   </head>
   <body>
     <h1>Bar Chart Example</h1>
-    <p>This is an example of a bar chart using TogoStanza.</p>
+    <p>What tasks do you use AI for?</p>
     <div id="barchart-container">
       <togostanza-barchart
         data-type="json"
         axis-x-key="task_approach"
         axis-x-placement="bottom"
         axis-x-title="Task category"
-        axis-x-title_padding="95"
+        axis-x-title_padding="130"
         axis-x-ticks_label_angle="-45"
         axis-y-key="count"
         axis-y-placement="left"
         axis-y-title="Respondents"
-        axis-y-title_padding="40"
+        axis-y-title_padding="50"
         axis-y-ticks_label_angle="0"
         group-key="series"
         group-arrangement="grouped"
@@ -33,7 +33,7 @@
         legend-title="series"
         event-incoming_change_selected_nodes
         event-outgoing_change_selected_nodes
-        togostanza-custom_css_url=""
+        togostanza-custom_css_url="https://yukikonoda.github.io/ai-survey-css/stanza-barchart.css"
       ></togostanza-barchart>
     </div>
   </body>
