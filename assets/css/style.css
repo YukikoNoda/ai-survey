@@ -14,9 +14,13 @@ body {
   margin: 20px;
   background-color: #f9f9f9;
   color: #333;
-}
 
-#barchart-container {
-  max-width: 600px;
-  margin: 0 auto;
+  .filter-container {
+    margin-bottom: 20px;
+  }
+
+  #barchart-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
 }
