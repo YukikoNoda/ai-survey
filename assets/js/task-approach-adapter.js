@@ -23,6 +23,18 @@ const SERIES = [
   ["complete", "complete", "#34d399"],
 ];
 
+// ===== 並び順（指定どおりに固定） =====
+const AGE_ORDER = [
+  "< 25 years old",
+  "25 - 34",
+  "35 - 44",
+  "45 - 54",
+  "> 55 years old",
+  "Prefer not to answer",
+];
+
+const GENDER_ORDER = ["Man", "Woman", "Non-binary", "Prefer not to answer"];
+
 // ===== 正規化ユーティリティ =====
 
 // 国名ゆれ統一（必要に応じて ALIAS を拡張）
@@ -57,13 +69,32 @@ function normalizeCountry(raw) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// 年齢は原則そのまま（空白等を整理）
+// 年齢の正規化（表記ゆれを指定カテゴリへ寄せる）
 function normalizeAge(raw) {
   if (!raw) return "";
-  return String(raw).normalize("NFKC").trim();
+  let s = String(raw).normalize("NFKC").trim();
+
+  const low = s.toLowerCase().replace(/\s+/g, " ");
+
+  if (/^<\s*25/.test(low) || /under\s*25/.test(low)) return "< 25 years old";
+  if (/^25\s*-\s*34/.test(low)) return "25 - 34";
+  if (/^35\s*-\s*44/.test(low)) return "35 - 44";
+  if (/^45\s*-\s*54/.test(low)) return "45 - 54";
+  if (
+    /^>\s*55/.test(low) ||
+    /55\+/.test(low) ||
+    /55\s*and\s*over/.test(low) ||
+    /over\s*55/.test(low) ||
+    /older\s*than\s*55/.test(low)
+  )
+    return "> 55 years old";
+  if (/prefer not/i.test(low)) return "Prefer not to answer";
+
+  // どれにも当たらない場合はそのまま返す（並びは後述のソートで末尾）
+  return s;
 }
 
-// 性別のゆれ統一（必要に応じて増やせます）
+// 性別の正規化
 function normalizeGender(raw) {
   if (!raw) return "";
   const s = String(raw).normalize("NFKC").trim().toLowerCase();
@@ -75,7 +106,8 @@ function normalizeGender(raw) {
     "non-binary": "Non-binary",
     nonbinary: "Non-binary",
     "non binary": "Non-binary",
-    "prefer not to say": "Prefer not to say",
+    "prefer not to say": "Prefer not to answer",
+    "prefer not to answer": "Prefer not to answer",
   };
   return ALIAS[s] || s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -90,9 +122,8 @@ function normChoice(raw) {
   return null;
 }
 
-let ROWS = [];
-
 // ===== 読み込み =====
+let ROWS = [];
 async function loadOnce() {
   const res = await fetch(SRC_URL, { cache: "no-store" });
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
@@ -100,22 +131,32 @@ async function loadOnce() {
 }
 
 // ===== セレクト候補の作成 =====
-function uniqSorted(values) {
-  return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b),
-  );
+function uniq(values) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+function sortedByList(list, orderList) {
+  const orderMap = new Map(orderList.map((v, i) => [v, i]));
+  return list
+    .slice()
+    .sort(
+      (a, b) =>
+        (orderMap.get(a) ?? 999) - (orderMap.get(b) ?? 999) ||
+        a.localeCompare(b),
+    );
 }
 
 function uniqueCountries(rows) {
-  return uniqSorted(rows.map((r) => normalizeCountry(r.country)));
+  return uniq(rows.map((r) => normalizeCountry(r.country))).sort((a, b) =>
+    a.localeCompare(b),
+  );
 }
-
 function uniqueAges(rows) {
-  return uniqSorted(rows.map((r) => normalizeAge(r.age)));
+  const vals = uniq(rows.map((r) => normalizeAge(r.age)));
+  return sortedByList(vals, AGE_ORDER);
 }
-
 function uniqueGenders(rows) {
-  return uniqSorted(rows.map((r) => normalizeGender(r.gender)));
+  const vals = uniq(rows.map((r) => normalizeGender(r.gender)));
+  return sortedByList(vals, GENDER_ORDER);
 }
 
 // ===== フィルタ =====
@@ -218,7 +259,7 @@ async function updateFromUI() {
 async function start() {
   await loadOnce();
 
-  // 選択肢を生成
+  // 選択肢を生成（Age/Gender は指定順に）
   populateSelect(SEL_C, uniqueCountries(ROWS));
   populateSelect(SEL_A, uniqueAges(ROWS));
   populateSelect(SEL_G, uniqueGenders(ROWS));
