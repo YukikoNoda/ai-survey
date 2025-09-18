@@ -1,8 +1,10 @@
 // ===== 設定 =====
-const SRC_URL = "/assets/data/ai_survey.renamed.json"; // 自サイト配下に置いた JSON を参照
+const SRC_URL = "/assets/data/ai_survey.renamed.json"; // 例: 自サイト配下
 
 const TARGET = document.querySelector("togostanza-barchart");
-const SELECT = document.getElementById("country-select");
+const SEL_C = document.getElementById("country-select");
+const SEL_A = document.getElementById("age-select");
+const SEL_G = document.getElementById("gender-select");
 
 // 7タスク（列名 → 表示名）
 const TASKS = [
@@ -21,30 +23,28 @@ const SERIES = [
   ["complete", "complete", "#34d399"],
 ];
 
-// ===== 国名正規化 =====
+// ===== 正規化ユーティリティ =====
+
+// 国名ゆれ統一（必要に応じて ALIAS を拡張）
 function normalizeCountry(raw) {
   if (!raw) return "";
-  let s = String(raw).normalize("NFKC").trim();
-
+  const s = String(raw).normalize("NFKC").trim();
   const key = s
     .toLowerCase()
-    .replace(/[\.\u2000-\u206F\u2E00-\u2E7F'’_,\-()/]/g, " ") // 記号→空白
+    .replace(/[\.\u2000-\u206F\u2E00-\u2E7F'’_,\-()/]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-
   const ALIAS = {
     // Germany
     germany: "Germany",
     de: "Germany",
     deutschland: "Germany",
-
     // United Kingdom
     uk: "United Kingdom",
     "u k": "United Kingdom",
     "united kingdom": "United Kingdom",
     "great britain": "United Kingdom",
     gb: "United Kingdom",
-
     // United States
     usa: "United States",
     "u s a": "United States",
@@ -53,14 +53,34 @@ function normalizeCountry(raw) {
     us: "United States",
     "u s": "United States",
   };
-
   if (ALIAS[key]) return ALIAS[key];
-
-  // マッチしなければそのまま返す
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// ===== AI利用の選択肢正規化 =====
+// 年齢は原則そのまま（空白等を整理）
+function normalizeAge(raw) {
+  if (!raw) return "";
+  return String(raw).normalize("NFKC").trim();
+}
+
+// 性別のゆれ統一（必要に応じて増やせます）
+function normalizeGender(raw) {
+  if (!raw) return "";
+  const s = String(raw).normalize("NFKC").trim().toLowerCase();
+  const ALIAS = {
+    man: "Man",
+    male: "Man",
+    woman: "Woman",
+    female: "Woman",
+    "non-binary": "Non-binary",
+    nonbinary: "Non-binary",
+    "non binary": "Non-binary",
+    "prefer not to say": "Prefer not to say",
+  };
+  return ALIAS[s] || s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// AIタスク使用アプローチの正規化（3分類）
 function normChoice(raw) {
   if (!raw) return null;
   const s = String(raw).toLowerCase().replace(/\s+/g, " ").trim();
@@ -72,28 +92,45 @@ function normChoice(raw) {
 
 let ROWS = [];
 
-// ===== データ読込 =====
+// ===== 読み込み =====
 async function loadOnce() {
   const res = await fetch(SRC_URL, { cache: "no-store" });
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
   ROWS = await res.json();
 }
 
-// ===== 国リスト生成 =====
-function uniqueCountries(rows) {
-  const set = new Set();
-  for (const r of rows) {
-    const canon = normalizeCountry(r.country);
-    if (canon) set.add(canon);
-  }
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
+// ===== セレクト候補の作成 =====
+function uniqSorted(values) {
+  return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b),
+  );
 }
 
-// ===== 国でフィルタ =====
-function filterByCountry(rows, selectedLabel) {
-  const target = normalizeCountry(selectedLabel);
-  if (!target) return rows; // All countries
-  return rows.filter((r) => normalizeCountry(r.country) === target);
+function uniqueCountries(rows) {
+  return uniqSorted(rows.map((r) => normalizeCountry(r.country)));
+}
+
+function uniqueAges(rows) {
+  return uniqSorted(rows.map((r) => normalizeAge(r.age)));
+}
+
+function uniqueGenders(rows) {
+  return uniqSorted(rows.map((r) => normalizeGender(r.gender)));
+}
+
+// ===== フィルタ =====
+function filterRows(rows, country, age, gender) {
+  const c = normalizeCountry(country);
+  const a = normalizeAge(age);
+  const g = normalizeGender(gender);
+  return rows.filter((r) => {
+    const rc = normalizeCountry(r.country);
+    const ra = normalizeAge(r.age);
+    const rg = normalizeGender(r.gender);
+    return (
+      (c ? rc === c : true) && (a ? ra === a : true) && (g ? rg === g : true)
+    );
+  });
 }
 
 // ===== 集計 =====
@@ -125,7 +162,7 @@ function aggregateFlat(rows) {
   return out;
 }
 
-// ===== グラフにデータを渡す =====
+// ===== チャートへ受け渡し =====
 function setChartData(flat) {
   const blob = new Blob([JSON.stringify(flat)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -134,50 +171,71 @@ function setChartData(flat) {
   setTimeout(() => URL.revokeObjectURL(url), 15000);
 }
 
-// ===== UI操作 =====
-function populateSelect(countries) {
-  [...SELECT.querySelectorAll('option:not([value=""])')].forEach((o) =>
-    o.remove(),
-  );
-  for (const c of countries) {
+// ===== UI 構築 =====
+function populateSelect(el, list) {
+  // 既存（All…以外）をクリア
+  [...el.querySelectorAll('option:not([value=""])')].forEach((o) => o.remove());
+  for (const v of list) {
     const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    SELECT.appendChild(opt);
+    opt.value = v;
+    opt.textContent = v;
+    el.appendChild(opt);
   }
 }
 
-function initEvents() {
-  SELECT.addEventListener("change", () => {
-    const c = SELECT.value;
-    history.replaceState(
-      null,
-      "",
-      c ? `#country=${encodeURIComponent(c)}` : "#",
-    );
-    update(c);
-  });
+function readHash() {
+  const h = new URLSearchParams(location.hash.replace(/^#/, ""));
+  return {
+    country: h.get("country") || "",
+    age: h.get("age") || "",
+    gender: h.get("gender") || "",
+  };
+}
 
-  const m = location.hash.match(/country=([^&]+)/);
-  if (m) {
-    const c = decodeURIComponent(m[1]);
-    SELECT.value = c;
-  }
+function writeHash({ country, age, gender }) {
+  const p = new URLSearchParams();
+  if (country) p.set("country", country);
+  if (age) p.set("age", age);
+  if (gender) p.set("gender", gender);
+  const hash = p.toString();
+  history.replaceState(null, "", hash ? `#${hash}` : "#");
 }
 
 // ===== 更新 =====
-async function update(country = "") {
-  const filtered = filterByCountry(ROWS, country);
+async function updateFromUI() {
+  const country = SEL_C.value;
+  const age = SEL_A.value;
+  const gender = SEL_G.value;
+
+  writeHash({ country, age, gender });
+
+  const filtered = filterRows(ROWS, country, age, gender);
   const flat = aggregateFlat(filtered);
   setChartData(flat);
 }
 
-// ===== スタートアップ =====
+// ===== 起動 =====
 async function start() {
   await loadOnce();
-  populateSelect(uniqueCountries(ROWS));
-  initEvents();
-  await update(SELECT.value || "");
+
+  // 選択肢を生成
+  populateSelect(SEL_C, uniqueCountries(ROWS));
+  populateSelect(SEL_A, uniqueAges(ROWS));
+  populateSelect(SEL_G, uniqueGenders(ROWS));
+
+  // ハッシュから初期値を反映
+  const init = readHash();
+  if (init.country) SEL_C.value = init.country;
+  if (init.age) SEL_A.value = init.age;
+  if (init.gender) SEL_G.value = init.gender;
+
+  // イベント
+  SEL_C.addEventListener("change", updateFromUI);
+  SEL_A.addEventListener("change", updateFromUI);
+  SEL_G.addEventListener("change", updateFromUI);
+
+  // 初回描画
+  await updateFromUI();
 }
 
 if (document.readyState === "loading") {
