@@ -1,5 +1,8 @@
 // データ元
-export const SRC_URL = "/assets/data/ai_survey.renamed.json";
+export const SRC_URL = new URL(
+  "../data/ai_survey.renamed.json",
+  import.meta.url,
+).href;
 
 // 対象DOM
 export const SELECTORS = {
