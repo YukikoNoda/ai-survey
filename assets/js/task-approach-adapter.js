@@ -1,16 +1,8 @@
 // ===== 設定 =====
-const SRC_URL =
-  "https://raw.githubusercontent.com/YukikoNoda/ai-survey/refs/heads/master/assets/data/ai_survey.renamed.json";
+const SRC_URL = "/assets/data/ai_survey.renamed.json"; // 自サイト配下に置いた JSON を参照
 
-// 対象チャート（複数あるなら 'togostanza-barchart.my-class' のようにクラスで絞る）
-const TARGET_SELECTOR = "togostanza-barchart";
-
-// series の色（HTML側の CSS 変数と揃えています）
-const SERIES = [
-  ["assist", "assist", "#f87171"],
-  ["draft", "draft", "#60a5fa"],
-  ["complete", "complete", "#34d399"],
-];
+const TARGET = document.querySelector("togostanza-barchart");
+const SELECT = document.getElementById("country-select");
 
 // 7タスク（列名 → 表示名）
 const TASKS = [
@@ -23,10 +15,53 @@ const TASKS = [
   ["task_approach_personal", "Personal"],
 ];
 
-// ===== 集計ロジック =====
+const SERIES = [
+  ["assist", "assist", "#f87171"],
+  ["draft", "draft", "#60a5fa"],
+  ["complete", "complete", "#34d399"],
+];
 
-// 英語文言 → 3択キーへ正規化
-function normalizeChoice(raw) {
+// ===== 国名正規化 =====
+function normalizeCountry(raw) {
+  if (!raw) return "";
+  let s = String(raw).normalize("NFKC").trim();
+
+  const key = s
+    .toLowerCase()
+    .replace(/[\.\u2000-\u206F\u2E00-\u2E7F'’_,\-()/]/g, " ") // 記号→空白
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const ALIAS = {
+    // Germany
+    germany: "Germany",
+    de: "Germany",
+    deutschland: "Germany",
+
+    // United Kingdom
+    uk: "United Kingdom",
+    "u k": "United Kingdom",
+    "united kingdom": "United Kingdom",
+    "great britain": "United Kingdom",
+    gb: "United Kingdom",
+
+    // United States
+    usa: "United States",
+    "u s a": "United States",
+    "united states": "United States",
+    "united states of america": "United States",
+    us: "United States",
+    "u s": "United States",
+  };
+
+  if (ALIAS[key]) return ALIAS[key];
+
+  // マッチしなければそのまま返す
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ===== AI利用の選択肢正規化 =====
+function normChoice(raw) {
   if (!raw) return null;
   const s = String(raw).toLowerCase().replace(/\s+/g, " ").trim();
   if (s.includes("assist with specific parts")) return "assist";
@@ -35,33 +70,51 @@ function normalizeChoice(raw) {
   return null;
 }
 
-async function fetchRows() {
+let ROWS = [];
+
+// ===== データ読込 =====
+async function loadOnce() {
   const res = await fetch(SRC_URL, { cache: "no-store" });
-  if (!res.ok) throw new Error(`fetch failed: ${res.status} ${res.statusText}`);
-  return res.json();
+  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+  ROWS = await res.json();
 }
 
-function aggregateToFlat(rows) {
-  // task × series → count
+// ===== 国リスト生成 =====
+function uniqueCountries(rows) {
+  const set = new Set();
+  for (const r of rows) {
+    const canon = normalizeCountry(r.country);
+    if (canon) set.add(canon);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+// ===== 国でフィルタ =====
+function filterByCountry(rows, selectedLabel) {
+  const target = normalizeCountry(selectedLabel);
+  if (!target) return rows; // All countries
+  return rows.filter((r) => normalizeCountry(r.country) === target);
+}
+
+// ===== 集計 =====
+function aggregateFlat(rows) {
   const counts = Object.fromEntries(
     TASKS.map(([f]) => [f, { assist: 0, draft: 0, complete: 0 }]),
   );
   for (const r of rows) {
     for (const [field] of TASKS) {
-      const k = normalizeChoice(r[field]);
+      const k = normChoice(r[field]);
       if (k) counts[field][k] += 1;
     }
   }
-
-  // フラット配列（x=task_approach, legend=series, y=count）
-  const flat = [];
-  TASKS.forEach(([field, label], taskIdx) => {
-    SERIES.forEach(([key, seriesLabel, color], seriesIdx) => {
-      flat.push({
+  const out = [];
+  TASKS.forEach(([field, label], tIdx) => {
+    SERIES.forEach(([key, sLabel, color], sIdx) => {
+      out.push({
         task_approach: label,
-        task_order: taskIdx,
-        series: seriesLabel,
-        series_order: seriesIdx,
+        task_order: tIdx,
+        series: sLabel,
+        series_order: sIdx,
         count: counts[field][key],
         color,
         url: "",
@@ -69,68 +122,62 @@ function aggregateToFlat(rows) {
       });
     });
   });
-  return flat;
+  return out;
 }
 
-async function buildBlobUrl() {
-  const rows = await fetchRows();
-  const flat = aggregateToFlat(rows);
+// ===== グラフにデータを渡す =====
+function setChartData(flat) {
   const blob = new Blob([JSON.stringify(flat)], { type: "application/json" });
-  return URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  TARGET.setAttribute("data-type", "json");
+  TARGET.setAttribute("data-url", url);
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
 }
 
-// ===== 初期化 =====
-
-async function initChart(el) {
-  // すでに data-url がある場合は何もしない（手動指定を尊重）
-  if (el.hasAttribute("data-url")) return;
-
-  // Stanza 定義待ち（保険）
-  if (window.customElements?.whenDefined) {
-    try {
-      await window.customElements.whenDefined("togostanza-barchart");
-    } catch {}
-  }
-
-  try {
-    const blobUrl = await buildBlobUrl();
-    el.setAttribute("data-type", "json"); // 念のため
-    el.setAttribute("data-url", blobUrl);
-
-    // 早すぎる revoke で読み込みに失敗する環境があるため、解放は任意
-    // 問題なければコメントを外してください
-    // setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
-  } catch (err) {
-    console.error("[task-approach-adapter] failed:", err);
-    // 失敗時の簡易UI（任意）
-    const msg = document.createElement("div");
-    msg.style.cssText = "color:#b91c1c;margin:8px 0;font-size:12px;";
-    msg.textContent = "Failed to load data.";
-    el.insertAdjacentElement("afterend", msg);
+// ===== UI操作 =====
+function populateSelect(countries) {
+  [...SELECT.querySelectorAll('option:not([value=""])')].forEach((o) =>
+    o.remove(),
+  );
+  for (const c of countries) {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    SELECT.appendChild(opt);
   }
 }
 
-function initAllExisting() {
-  document.querySelectorAll(TARGET_SELECTOR).forEach(initChart);
+function initEvents() {
+  SELECT.addEventListener("change", () => {
+    const c = SELECT.value;
+    history.replaceState(
+      null,
+      "",
+      c ? `#country=${encodeURIComponent(c)}` : "#",
+    );
+    update(c);
+  });
+
+  const m = location.hash.match(/country=([^&]+)/);
+  if (m) {
+    const c = decodeURIComponent(m[1]);
+    SELECT.value = c;
+  }
 }
 
-// 動的に追加される <togostanza-barchart> にも対応
-const mo = new MutationObserver((muts) => {
-  for (const m of muts) {
-    for (const node of m.addedNodes) {
-      if (node instanceof Element && node.matches?.(TARGET_SELECTOR)) {
-        initChart(node);
-      }
-      if (node instanceof Element) {
-        node.querySelectorAll?.(TARGET_SELECTOR).forEach(initChart);
-      }
-    }
-  }
-});
+// ===== 更新 =====
+async function update(country = "") {
+  const filtered = filterByCountry(ROWS, country);
+  const flat = aggregateFlat(filtered);
+  setChartData(flat);
+}
 
-function start() {
-  initAllExisting();
-  mo.observe(document.documentElement, { childList: true, subtree: true });
+// ===== スタートアップ =====
+async function start() {
+  await loadOnce();
+  populateSelect(uniqueCountries(ROWS));
+  initEvents();
+  await update(SELECT.value || "");
 }
 
 if (document.readyState === "loading") {

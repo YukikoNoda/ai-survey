@@ -13,6 +13,15 @@
   <body>
     <h1>Bar Chart Example</h1>
     <p>What tasks do you use AI for?</p>
+
+    <label>
+      Country:
+      <select id="country-select">
+        <option value="">All countries</option>
+        <!-- JSがここに国リストを自動で追加します -->
+      </select>
+    </label>
+
     <div id="barchart-container">
       <togostanza-barchart
         data-type="json"
@@ -26,6 +35,7 @@
         axis-y-title="Respondents"
         axis-y-title_padding="50"
         axis-y-ticks_label_angle="0"
+        axis-y-ticks_interval="1"
         group-key="series"
         group-arrangement="grouped"
         tooltip="{{#if url}}&lt;a href&#x3D;{{url}}&gt;{{count}}&lt;/a&gt;{{else}}&lt;span&gt;{{count}}&lt;/span&gt;{{/if}}"
