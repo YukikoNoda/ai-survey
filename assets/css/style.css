@@ -1,0 +1,24 @@
+togostanza-barchart {
+  --togostanza-canvas-height: 405;
+  --togostanza-canvas-padding: 10 20 100 50;
+  --togostanza-theme-series_0_color: #f87171;
+  --togostanza-theme-series_1_color: #60a5fa;
+  --togostanza-theme-series_2_color: #34d399;
+  --togostanza-fonts-font_size_default: 9;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #f9f9f9;
+  color: #333;
+
+  .legend > table > tbody > tr > td + td > span {
+    font-size: 10px;
+  }
+}
+
+#barchart-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
