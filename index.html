@@ -1,65 +1,85 @@
-<link rel="stylesheet" href="./assets/css/style.css" />
-<script
-  type="module"
-  src="https://togostanza.github.io/metastanza-devel/barchart.js"
-  async
-></script>
-
-<html>
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
     <title>What tasks do you use AI for?</title>
+
+    <!-- あなたのサイトのスタイル -->
+    <link rel="stylesheet" href="./assets/css/style.css" />
+
+    <!-- Stanza本体（非同期） -->
+    <script
+      type="module"
+      src="https://togostanza.github.io/metastanza-devel/barchart.js"
+      async
+    ></script>
   </head>
+
   <body>
-    <h1>What tasks do you use AI for?</h1>
+    <header class="page-header">
+      <h1>What tasks do you use AI for?</h1>
+      <p class="page-subtitle">
+        Filter by Country / Age / Gender to compare how people use AI across
+        tasks.
+      </p>
+    </header>
 
-    <div class="filter-container">
-      <label>
-        Country:
-        <select id="country-select">
-          <option value="">All countries</option>
-        </select>
-      </label>
+    <section class="panel filter-container" aria-label="Filters">
+      <div class="filters">
+        <label class="field">
+          <span class="field-label">Country</span>
+          <select id="country-select" class="field-control">
+            <option value="">All countries</option>
+          </select>
+        </label>
 
-      <label style="margin-left: 12px">
-        Age:
-        <select id="age-select">
-          <option value="">All ages</option>
-        </select>
-      </label>
+        <label class="field">
+          <span class="field-label">Age</span>
+          <select id="age-select" class="field-control">
+            <option value="">All ages</option>
+          </select>
+        </label>
 
-      <label style="margin-left: 12px">
-        Gender:
-        <select id="gender-select">
-          <option value="">All genders</option>
-        </select>
-      </label>
-    </div>
+        <label class="field">
+          <span class="field-label">Gender</span>
+          <select id="gender-select" class="field-control">
+            <option value="">All genders</option>
+          </select>
+        </label>
+      </div>
+    </section>
 
-    <div id="barchart-container">
-      <togostanza-barchart
-        data-type="json"
-        axis-x-key="task_approach"
-        axis-x-placement="bottom"
-        axis-x-title="Task category"
-        axis-x-title_padding="130"
-        axis-x-ticks_label_angle="-45"
-        axis-y-key="count"
-        axis-y-placement="left"
-        axis-y-title="Respondents"
-        axis-y-title_padding="50"
-        axis-y-ticks_label_angle="0"
-        group-key="series"
-        group-arrangement="grouped"
-        tooltip="{{#if url}}&lt;a href&#x3D;{{url}}&gt;{{count}}&lt;/a&gt;{{else}}&lt;span&gt;{{count}}&lt;/span&gt;{{/if}}"
-        legend-visible
-        legend-title="series"
-        event-incoming_change_selected_nodes
-        event-outgoing_change_selected_nodes
-        togostanza-custom_css_url="https://yukikonoda.github.io/ai-survey-css/stanza-barchart.css"
-      ></togostanza-barchart>
-    </div>
+    <section class="panel" id="barchart-container" aria-label="Chart">
+      <div class="barchart-wrapper">
+        <togostanza-barchart
+          data-type="json"
+          axis-x-key="task_approach"
+          axis-x-placement="bottom"
+          axis-x-title="Task category"
+          axis-x-title_padding="120"
+          axis-x-ticks_label_angle="-40"
+          axis-y-key="count"
+          axis-y-placement="left"
+          axis-y-title="Respondents"
+          axis-y-title_padding="44"
+          axis-y-ticks_label_angle="0"
+          group-key="series"
+          group-arrangement="grouped"
+          tooltip="{{#if url}}&lt;a href&#x3D;{{url}} target&#x3D;_blank rel&#x3D;noopener&gt;{{count}}&lt;/a&gt;{{else}}&lt;span&gt;{{count}}&lt;/span&gt;{{/if}}"
+          legend-visible
+          legend-title="Approach"
+          event-incoming_change_selected_nodes
+          event-outgoing_change_selected_nodes
+          togostanza-custom_css_url="https://yukikonoda.github.io/ai-survey-css/stanza-barchart.css"
+        ></togostanza-barchart>
+      </div>
+    </section>
+
+    <!-- データ取得＆集計 → data-url をセットする外部JS -->
+    <script type="module" src="./assets/js/task-approach-adapter.js"></script>
   </body>
 </html>
-
-<script type="module" src="./assets/js/task-approach-adapter.js"></script>

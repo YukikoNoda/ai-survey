@@ -1,26 +1,179 @@
-togostanza-barchart {
-  --togostanza-canvas-height: 500;
-  /* --togostanza-canvas-width: 600; */
-  --togostanza-canvas-padding: 10 20 150 50;
-  --togostanza-theme-series_0_color: #f87171;
-  --togostanza-theme-series_1_color: #60a5fa;
-  --togostanza-theme-series_2_color: #34d399;
-  --togostanza-fonts-font_size_default: 15;
-  --togostanza-fonts-font_size_small: 13;
+/* ==== Base =============================================================== */
+:root {
+  --bg-grad-start: #f9f9fb;
+  --bg-grad-end: #e0e7ff;
+  --text-900: #0f172a;
+  --text-700: #334155;
+  --text-600: #475569;
+  --border-200: #e5e7eb;
+  --border-300: #cbd5e1;
+  --panel-bg: #ffffff;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --shadow-sm: 0 2px 8px rgba(30, 41, 59, 0.08);
+  --shadow-md: 0 4px 16px rgba(30, 41, 59, 0.1);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
-  background-color: #f9f9f9;
-  color: #333;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  margin: 0;
+  color: var(--text-900);
+  background: linear-gradient(
+    135deg,
+    var(--bg-grad-start) 60%,
+    var(--bg-grad-end) 100%
+  );
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  .filter-container {
-    margin-bottom: 20px;
-  }
+/* ==== Header ============================================================ */
+.page-header {
+  max-width: 1100px;
+  margin: 32px auto 8px;
+  padding: 0 16px;
+}
 
-  #barchart-container {
-    max-width: 600px;
-    margin: 0 auto;
+.page-header h1 {
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.25;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+
+.page-subtitle {
+  margin: 8px 0 0;
+  color: var(--text-600);
+  font-size: 14px;
+}
+
+/* ==== Panels (white cards) ============================================= */
+.panel {
+  max-width: 1100px;
+  margin: 16px auto;
+  padding: 16px;
+  background: var(--panel-bg);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ==== Filters =========================================================== */
+.filter-container {
+  padding: 16px 20px;
+}
+
+.filters {
+  display: flex;
+  gap: 12px 30px;
+}
+
+@media (max-width: 860px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
+}
+@media (max-width: 560px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: grid;
+  /* grid-template-columns: 60px 1fr; */
+  align-items: center;
+  gap: 8px;
+}
+
+.field-label {
+  color: var(--text-700);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.field-control {
+  appearance: none;
+  /* width: 75%; */
+  padding: 8px 34px 8px 10px;
+  border: 1px solid var(--border-300);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%),
+    url("data:image/svg+xml,%3Csvg width='12' height='8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2399a2b2' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")
+      no-repeat right 10px center;
+  background-size:
+    auto,
+    12px 8px;
+  color: var(--text-900);
+  font-size: 14px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.field-control:focus {
+  outline: none;
+  border-color: var(--brand-400);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+}
+
+/* ==== Chart container =================================================== */
+#barchart-container {
+  padding: 20px 18px 10px;
+  box-shadow: var(--shadow-md);
+}
+
+.barchart-wrapper {
+  max-width: 558px;
+  margin: 0 auto;
+}
+
+/* ==== TogoStanza host vars (Shadow内のテーマ変数) ====================== */
+togostanza-barchart {
+  /* Canvas */
+  --togostanza-canvas-height: 520;
+  --togostanza-canvas-padding: 20 36 140 56;
+
+  /* Series colors */
+  --togostanza-theme-series_0_color: #f87171; /* assist */
+  --togostanza-theme-series_1_color: #60a5fa; /* draft */
+  --togostanza-theme-series_2_color: #34d399; /* complete */
+
+  /* Typography inside shadow (使える範囲で) */
+  --togostanza-fonts-font_size_default: 12;
+  --togostanza-fonts-font_size_small: 10;
+}
+
+@media (max-width: 560px) {
+  togostanza-barchart {
+    --togostanza-canvas-height: 560;
+    --togostanza-canvas-padding: 16 16 180 44; /* 角度-45°で長いXラベルに対応 */
+    --togostanza-fonts-font_size_default: 11;
+    --togostanza-fonts-font_size_small: 9;
+  }
+}
+
+/* ==== Helpers =========================================================== */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 1px, 1px);
+  white-space: nowrap;
+  border: 0;
 }
