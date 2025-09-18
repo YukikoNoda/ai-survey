@@ -1,0 +1,68 @@
+<script
+  type="module"
+  src="https://togostanza.github.io/metastanza-devel/barchart.js"
+  async
+></script>
+
+<style>
+  togostanza-barchart {
+    --togostanza-canvas-height: 405;
+    --togostanza-canvas-padding: 10 20 100 50;
+    --togostanza-theme-series_0_color: #f87171;
+    --togostanza-theme-series_1_color: #60a5fa;
+    --togostanza-theme-series_2_color: #34d399;
+    --togostanza-fonts-font_size_default: 9;
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f9f9f9;
+    color: #333;
+
+    .legend > table > tbody > tr > td + td > span {
+      font-size: 10px;
+    }
+  }
+
+  #barchart-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Bar Chart Example</title>
+  </head>
+  <body>
+    <h1>Bar Chart Example</h1>
+    <p>This is an example of a bar chart using TogoStanza.</p>
+    <div id="barchart-container">
+      <togostanza-barchart
+        data-type="json"
+        axis-x-key="task_approach"
+        axis-x-placement="bottom"
+        axis-x-title="Task category"
+        axis-x-title_padding="95"
+        axis-x-ticks_label_angle="-45"
+        axis-y-key="count"
+        axis-y-placement="left"
+        axis-y-title="Respondents"
+        axis-y-title_padding="40"
+        axis-y-ticks_label_angle="0"
+        group-key="series"
+        group-arrangement="grouped"
+        tooltip="{{#if url}}&lt;a href&#x3D;{{url}}&gt;{{count}}&lt;/a&gt;{{else}}&lt;span&gt;{{count}}&lt;/span&gt;{{/if}}"
+        legend-visible
+        legend-title="series"
+        event-incoming_change_selected_nodes
+        event-outgoing_change_selected_nodes
+        togostanza-custom_css_url=""
+      ></togostanza-barchart>
+    </div>
+  </body>
+</html>
+
+<script type="module" src="./assets/js/task-approach-adapter.js"></script>
