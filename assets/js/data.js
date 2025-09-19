@@ -24,7 +24,7 @@ const sortedByList = (values, order) => {
     );
 };
 
-// セレクト候補
+// Select options
 export function uniqueCountries(rows) {
   return uniq(rows.map((r) => normalizeCountry(r.country))).sort((a, b) =>
     a.localeCompare(b),
@@ -40,7 +40,7 @@ export function uniqueGenders(rows) {
   );
 }
 
-// フィルタ
+// Filter
 export function filterRows(rows, country, age, gender) {
   const c = normalizeCountry(country);
   const a = normalizeAge(age);

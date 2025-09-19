@@ -1,4 +1,4 @@
-// 国名ゆれ統一
+// Normalize country names
 export function normalizeCountry(raw) {
   if (!raw) return "";
   const s = String(raw).normalize("NFKC").trim();
@@ -27,7 +27,7 @@ export function normalizeCountry(raw) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// 年齢
+// Normalize age
 export function normalizeAge(raw) {
   if (!raw) return "";
   const s = String(raw).normalize("NFKC").trim();
@@ -47,7 +47,7 @@ export function normalizeAge(raw) {
   return s;
 }
 
-// 性別
+// Normalize gender
 export function normalizeGender(raw) {
   if (!raw) return "";
   const s = String(raw).normalize("NFKC").trim().toLowerCase();
@@ -65,7 +65,7 @@ export function normalizeGender(raw) {
   return ALIAS[s] || s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// タスク使用アプローチ（3分類）
+// Task usage approach (3 categories)
 export function normalizeChoice(raw) {
   if (!raw) return null;
   const s = String(raw).toLowerCase().replace(/\s+/g, " ").trim();

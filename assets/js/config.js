@@ -1,10 +1,10 @@
-// データ元
+// Data source
 export const SRC_URL = new URL(
   "../data/ai_survey.renamed.json",
   import.meta.url,
 ).href;
 
-// 対象DOM
+// Target DOM elements
 export const SELECTORS = {
   chart: "togostanza-barchart",
   country: "#country-select",
@@ -12,7 +12,7 @@ export const SELECTORS = {
   gender: "#gender-select",
 };
 
-// 7タスク（列名 → 表示名）
+// 7 tasks (column name → display name)
 export const TASKS = [
   ["task_approach_coding", "Coding"],
   ["task_approach_research", "Research"],
@@ -23,14 +23,14 @@ export const TASKS = [
   ["task_approach_personal", "Personal"],
 ];
 
-// 凡例（series）
+// Legend (series)
 export const SERIES = [
   ["assist", "assist", "#f87171"],
   ["draft", "draft", "#60a5fa"],
   ["complete", "complete", "#34d399"],
 ];
 
-// 並び順
+// Sort order
 export const AGE_ORDER = [
   "< 25 years old",
   "25 - 34",

@@ -2,7 +2,7 @@
 import { TASKS, SERIES } from "./config.js";
 import { normalizeChoice } from "./normalize.js";
 
-// 集計（据え置き）
+// Aggregation (unchanged)
 export function aggregateFlat(rows) {
   const counts = Object.fromEntries(
     TASKS.map(([f]) => [f, { assist: 0, draft: 0, complete: 0 }]),
@@ -31,7 +31,7 @@ export function aggregateFlat(rows) {
   return out;
 }
 
-// ユーティリティ：最大countを取得
+// Utility: Get maximum count
 function getMaxCount(flat) {
   if (!flat?.length) return 0;
   let max = 0;
@@ -42,7 +42,7 @@ function getMaxCount(flat) {
   return max;
 }
 
-// <togostanza-barchart> に渡す（最大値で軸ティックを調整）
+// Pass data to <togostanza-barchart> (adjust axis ticks by max value)
 export function setChartData(chartEl, flat) {
   const blob = new Blob([JSON.stringify(flat)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -50,18 +50,18 @@ export function setChartData(chartEl, flat) {
   chartEl.setAttribute("data-type", "json");
   chartEl.setAttribute("data-url", url);
 
-  // ここで最大値を判断して axis-y-ticks_interval を調整
+  // Adjust axis-y-ticks_interval based on max value
   const maxCount = getMaxCount(flat);
   if (maxCount < 4) {
     chartEl.setAttribute("axis-y-ticks_interval", "1");
-    // ラベルは整数表示が望ましいので一緒に指定（不要なら削除OK）
+    // Specify integer label format (delete if unnecessary)
     chartEl.setAttribute("axis-y-ticks_labels_format", ",.0f");
   } else {
     chartEl.removeAttribute("axis-y-ticks_interval");
-    // 他の場面で別フォーマットを使っているなら触らなくてもOK
+    // If using other formats elsewhere, you can leave this untouched
     // chartEl.removeAttribute("axis-y-ticks_labels_format");
   }
 
-  // 早すぎるrevokeで読み込み失敗する環境があるので少し遅らせる
+  // Delay revoke to avoid loading failure in some environments
   setTimeout(() => URL.revokeObjectURL(url), 15000);
 }
