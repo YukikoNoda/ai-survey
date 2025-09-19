@@ -25,9 +25,9 @@ export const TASKS = [
 
 // Legend (series)
 export const SERIES = [
+  ["complete", "complete", "#34d399"],
   ["assist", "assist", "#f87171"],
   ["draft", "draft", "#60a5fa"],
-  ["complete", "complete", "#34d399"],
 ];
 
 // Sort order

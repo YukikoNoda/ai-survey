@@ -42,9 +42,19 @@ function getMaxCount(flat) {
   return max;
 }
 
-// Pass data to <togostanza-barchart> (adjust axis ticks by max value)
+// series order: complete → assist → draft
+const SERIES_ORDER = { complete: 0, assist: 1, draft: 2 };
+
+// <togostanza-barchart>
 export function setChartData(chartEl, flat) {
-  const blob = new Blob([JSON.stringify(flat)], { type: "application/json" });
+  // 並べ替え（task_order優先 → series順）
+  const sorted = flat.slice().sort((a, b) => {
+    const to = a.task_order - b.task_order;
+    if (to !== 0) return to;
+    return (SERIES_ORDER[a.series] ?? 99) - (SERIES_ORDER[b.series] ?? 99);
+  });
+
+  const blob = new Blob([JSON.stringify(sorted)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
   chartEl.setAttribute("data-type", "json");
@@ -54,14 +64,11 @@ export function setChartData(chartEl, flat) {
   const maxCount = getMaxCount(flat);
   if (maxCount < 4) {
     chartEl.setAttribute("axis-y-ticks_interval", "1");
-    // Specify integer label format (delete if unnecessary)
     chartEl.setAttribute("axis-y-ticks_labels_format", ",.0f");
   } else {
     chartEl.removeAttribute("axis-y-ticks_interval");
-    // If using other formats elsewhere, you can leave this untouched
-    // chartEl.removeAttribute("axis-y-ticks_labels_format");
+    chartEl.removeAttribute("axis-y-ticks_labels_format");
   }
 
-  // Delay revoke to avoid loading failure in some environments
   setTimeout(() => URL.revokeObjectURL(url), 15000);
 }
