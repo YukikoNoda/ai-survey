@@ -148,8 +148,8 @@ togostanza-barchart {
 
   /* Series colors */
   --togostanza-theme-series_0_color: #34d399; /* complete */
-  --togostanza-theme-series_1_color: #f87171; /* assist   */
-  --togostanza-theme-series_2_color: #60a5fa; /* draft    */
+  --togostanza-theme-series_1_color: #f87171; /* draft    */
+  --togostanza-theme-series_2_color: #60a5fa; /* assist   */
 
   /* Typography inside shadow (使える範囲で) */
   --togostanza-fonts-font_size_default: 12;

@@ -43,16 +43,16 @@ function getMaxCount(flat) {
 }
 
 // series order: complete → draft → assist
-const SERIES_ORDER = { complete: 0, draft: 1, assist: 2 };
+// const SERIES_ORDER = { complete: 0, draft: 1, assist: 2 };
 
 // <togostanza-barchart>
 export function setChartData(chartEl, flat) {
   // 並べ替え（task_order優先 → series順）
-  const sorted = flat.slice().sort((a, b) => {
-    const to = a.task_order - b.task_order;
-    if (to !== 0) return to;
-    return (SERIES_ORDER[a.series] ?? 99) - (SERIES_ORDER[b.series] ?? 99);
-  });
+  const sorted = flat
+    .slice()
+    .sort(
+      (a, b) => a.task_order - b.task_order || a.series_order - b.series_order,
+    );
 
   const blob = new Blob([JSON.stringify(sorted)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
