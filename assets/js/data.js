@@ -26,18 +26,19 @@ const sortedByList = (values, order) => {
 
 // Select options
 export function uniqueCountries(rows) {
-  return uniq(rows.map((r) => normalizeCountry(r.country))).sort((a, b) =>
-    a.localeCompare(b),
-  );
+  return uniq(
+    rows.map((r) => normalizeCountry(r.country)).filter((v) => v !== ""),
+  ).sort((a, b) => a.localeCompare(b));
 }
+
 export function uniqueAges(rows) {
-  return sortedByList(uniq(rows.map((r) => normalizeAge(r.age))), AGE_ORDER);
+  const vals = uniq(rows.map((r) => normalizeAge(r.age)));
+  return vals;
 }
+
 export function uniqueGenders(rows) {
-  return sortedByList(
-    uniq(rows.map((r) => normalizeGender(r.gender))),
-    GENDER_ORDER,
-  );
+  const vals = uniq(rows.map((r) => normalizeGender(r.gender)));
+  return vals;
 }
 
 // Filter
@@ -45,8 +46,11 @@ export function filterRows(rows, country, age, gender) {
   const c = normalizeCountry(country);
   const a = normalizeAge(age);
   const g = normalizeGender(gender);
+
   return rows.filter((r) => {
     const rc = normalizeCountry(r.country);
+    if (rc === "") return false; // 国名ではない → 集計対象外（常に除外）
+
     const ra = normalizeAge(r.age);
     const rg = normalizeGender(r.gender);
     return (

@@ -2,11 +2,24 @@
 export function normalizeCountry(raw) {
   if (!raw) return "";
   const s = String(raw).normalize("NFKC").trim();
-  const key = s
-    .toLowerCase()
+
+  // --- Block patterns that are clearly not country names ---
+  const low = s.toLowerCase();
+  const NON_COUNTRY_BLOCKLIST = [
+    /postdoctoral\s+researcher/i,
+    /postdoc\b/i,
+    // You can add more patterns as needed (e.g., /student/i)
+  ];
+  if (NON_COUNTRY_BLOCKLIST.some((re) => re.test(low))) {
+    return ""; // Not treated as country name → not included in select or aggregation
+  }
+
+  // --- Absorb variations in country names (alias) ---
+  const key = low
     .replace(/[\.\u2000-\u206F\u2E00-\u2E7F'’_,\-()/]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
   const ALIAS = {
     germany: "Germany",
     de: "Germany",
@@ -24,6 +37,8 @@ export function normalizeCountry(raw) {
     "u s": "United States",
   };
   if (ALIAS[key]) return ALIAS[key];
+
+  // For unknown aliases, return as is (capitalize first letter)
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
