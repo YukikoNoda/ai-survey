@@ -84,8 +84,8 @@ export function normalizeGender(raw) {
 export function normalizeChoice(raw) {
   if (!raw) return null;
   const s = String(raw).toLowerCase().replace(/\s+/g, " ").trim();
-  if (s.includes("assist with specific parts")) return "assist";
-  if (s.includes("generate a first draft")) return "draft";
   if (s.includes("complete the entire task")) return "complete";
+  if (s.includes("generate a first draft")) return "draft";
+  if (s.includes("assist with specific parts")) return "assist";
   return null;
 }

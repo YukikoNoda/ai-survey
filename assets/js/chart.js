@@ -5,7 +5,7 @@ import { normalizeChoice } from "./normalize.js";
 // Aggregation (unchanged)
 export function aggregateFlat(rows) {
   const counts = Object.fromEntries(
-    TASKS.map(([f]) => [f, { assist: 0, draft: 0, complete: 0 }]),
+    TASKS.map(([f]) => [f, { complete: 0, draft: 0, assist: 0 }]),
   );
   for (const r of rows) {
     for (const [field] of TASKS) {
@@ -42,8 +42,8 @@ function getMaxCount(flat) {
   return max;
 }
 
-// series order: complete → assist → draft
-const SERIES_ORDER = { complete: 0, assist: 1, draft: 2 };
+// series order: complete → draft → assist
+const SERIES_ORDER = { complete: 0, draft: 1, assist: 2 };
 
 // <togostanza-barchart>
 export function setChartData(chartEl, flat) {
